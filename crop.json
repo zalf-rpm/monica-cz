@@ -7,7 +7,7 @@
 				"species": ["include-from-file", "crops/species/wheat.json"],
 				"cultivar": ["include-from-file", "crops/cultivars/winter-wheat_cz.json"]
 			},
-			"residueParams": ["include-from-file", "crops/residues/wheat_cz.json"]
+			"residueParams": ["include-from-file", "crops/residues/wheat.json"]
 		},
 		"WB_dwd": {
 			"is-winter-crop": true,
@@ -31,7 +31,7 @@
 				"species": ["include-from-file", "crops/species/barley.json"],
 				"cultivar": ["include-from-file", "crops/cultivars/spring-barley_cz.json"]
 			},
-			"residueParams": ["include-from-file", "crops/residues/barley_cz.json"]
+			"residueParams": ["include-from-file", "crops/residues/barley.json"]
 		},
 		"WRa_dwd": {
 			"is-winter-crop": true,
