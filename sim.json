@@ -48,7 +48,8 @@
 				["NPP", "SUM"],
 				["NEE", "SUM"],
 				["Act_ET", "SUM"],
-				["LAI", "MAX"]
+				["LAI", "MAX"],
+				["Precip", "SUM"]
 			],
 			{"start": "Sowing", "end": "Harvest"}, [
 				"Date",
