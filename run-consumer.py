@@ -49,7 +49,7 @@ PATHS = {
     }
 }
 # TEMPLATE_SOIL_PATH = "{local_path_to_data_dir}/cz/cz_soil_1000_32633_etrs89-utm33n.asc"
-TEMPLATE_SOIL_PATH = "{local_path_to_data_dir}/cz/cz_soil_500_32633_etrs89-utm33n.asc"
+TEMPLATE_SOIL_PATH = "{local_path_to_data_dir}/cz/cz_soil_500_32633_etrs89-utm33n_woesten.asc"
 
 def create_output(msg):
     cm_count_to_vals = defaultdict(dict)
