@@ -49,7 +49,8 @@
 				["NEE", "SUM"],
 				["Act_ET", "SUM"],
 				["LAI", "MAX"],
-				["Precip", "SUM"]
+				["Precip", "SUM"],
+				["AbBiom", "LAST"]
 			],
 			{"start": "Sowing", "end": "Harvest"}, [
 				"Date",
