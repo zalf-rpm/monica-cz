@@ -31,7 +31,7 @@
 				"species": ["include-from-file", "crops/species/barley.json"],
 				"cultivar": ["include-from-file", "crops/cultivars/spring-barley_cz.json"]
 			},
-			"residueParams": ["include-from-file", "crops/residues/barley.json"]
+			"residueParams": ["include-from-file", "crops/residues/barley_cz.json"]
 		},
 		"WRa": {
 			"is-winter-crop": true,
