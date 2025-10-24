@@ -26,7 +26,7 @@
 			"residueParams": ["include-from-file", "crops/residues/rye.json"]
 		},
 		"SB": {
-			"is-winter-crop": true,
+			"is-winter-crop": false,
 			"cropParams": {
 				"species": ["include-from-file", "crops/species/barley.json"],
 				"cultivar": ["include-from-file", "crops/cultivars/spring-barley_cz.json"]
