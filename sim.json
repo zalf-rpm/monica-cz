@@ -50,7 +50,11 @@
 				["Act_ET", "SUM"],
 				["LAI", "MAX"],
 				["Precip", "SUM"],
-				["AbBiom", "LAST"]
+				["AbBiom", "LAST"],
+				["sand", [1, "LAST"]],
+				["sand|sand_30", [1,3, "AVG"]],
+				["clay|clay_60", [4,6, "AVG"]],
+				["TempSum", "LAST"]
 			],
 			{"start": "Sowing", "end": "Harvest"}, [
 				"Date",
