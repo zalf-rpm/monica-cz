@@ -36,24 +36,24 @@
 		"WRa": {
 			"is-winter-crop": true,
 			"cropParams": {
-				"species": ["include-from-file", "crops/species/rape.json"],
-				"cultivar": ["include-from-file", "crops/cultivars/winter-rape_dwd_pheno.json"]
+				"species": ["include-from-file", "crops/species/rape_cz.json"],
+				"cultivar": ["include-from-file", "crops/cultivars/winter-rape_cz.json"]
 			},
 			"residueParams": ["include-from-file", "crops/residues/rape.json"]
 		},
 		"SM": {
 			"is-winter-crop": true,
 			"cropParams": {
-				"species": ["include-from-file", "crops/species/maize.json"],
-				"cultivar": ["include-from-file", "crops/cultivars/silage-maize_bs_dwd_pheno.json"]
+				"species": ["include-from-file", "crops/species/maize_cz.json"],
+				"cultivar": ["include-from-file", "crops/cultivars/silage-maize_cz.json"]
 			},
 			"residueParams": ["include-from-file", "crops/residues/maize.json"]
 		},
 		"SU": {
 			"is-winter-crop": true,
 			"cropParams": {
-				"species": ["include-from-file", "crops/species/sugar-beet.json"],
-				"cultivar": ["include-from-file", "crops/cultivars/sugar-beet_bs_dwd_pheno.json"]
+				"species": ["include-from-file", "crops/species/sugar-beet_cz.json"],
+				"cultivar": ["include-from-file", "crops/cultivars/sugar-beet_cz.json"]
 			},
 			"residueParams": ["include-from-file", "crops/residues/beet.json"]
 		},
