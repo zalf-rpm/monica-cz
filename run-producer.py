@@ -27,7 +27,6 @@ import zmq
 import geopandas as gpd
 import rasterio
 from rasterio import features
-import subprocess
 
 import monica_io3
 import cz_soil_io3
@@ -42,15 +41,7 @@ PATHS = {
         "monica-path-to-climate-dir": "/monica_data/climate-data/",
         # mounted path to archive accessable by monica executable
         "path-to-data-dir": "./data/",  # mounted path to archive or hard drive with data
-        "path-debug-write-folder": "./debug-out/",
-    },
-    "ow-local-remote": {
-        # "include-file-base-path": "/home/berg/GitHub/monica-parameters/", # path to monica-parameters
-        "path-to-climate-dir": "/beegfs/common/data/climate/",
-        # mounted path to archive or hard drive with climate data
-        "monica-path-to-climate-dir": "/monica_data/climate-data/",
-        # mounted path to archive accessable by monica executable
-        "path-to-data-dir": "./data/",  # mounted path to archive or hard drive with data
+        "path-to-projects-dir": "./data/cz/",
         "path-debug-write-folder": "./debug-out/",
     },
     "mbm-local-remote": {
@@ -78,6 +69,7 @@ PATHS = {
         "monica-path-to-climate-dir": "/monica_data/climate-data/",
         # mounted path to archive accessable by monica executable
         "path-to-data-dir": "./data/",  # mounted path to archive or hard drive with data
+        "path-to-projects-dir": "/project/monica-cz/",
         "path-debug-write-folder": "/out/debug-out/",
     }
 }
@@ -91,8 +83,7 @@ PATHS = {
 
 # 500 m resolution data
 # DATA_SOIL_DB = "cz/cz_soil_500.sqlite"
-DATA_SOIL_DB = "cz/cz_soil_500_woesten.sqlite"
-SOIL_DB_URL = "https://github.com/zalf-rpm/monica-cz/raw/refs/heads/main/data/cz/cz_soil_500_woesten.sqlite"
+DATA_SOIL_DB = "cz_soil_500_woesten.sqlite"
 DATA_GRID_HEIGHT = "cz/cz_dem_500_32633_etrs89-utm33n.asc"
 DATA_GRID_SLOPE = "cz/cz_slope_500_32633_etrs89-utm33n.asc"
 # DATA_GRID_SOIL = "cz/cz_soil_500_32633_etrs89-utm33n.asc"
@@ -151,9 +142,7 @@ def run_producer(server={"server": None, "port": None}, shared_id=None):
     # select paths
     paths = PATHS[config["mode"]]
 
-    soil_db_path = paths["path-to-data-dir"] + DATA_SOIL_DB
-    subprocess.run(["wget", "-O", soil_db_path, SOIL_DB_URL], check=True)
-    print("Downloaded soil db successfully.")
+    soil_db_path = paths["path-to-projects-dir"] + DATA_SOIL_DB
 
     # open soil db connection
     # soil_db_con = sqlite3.connect(paths["path-to-data-dir"] + DATA_SOIL_DB)
