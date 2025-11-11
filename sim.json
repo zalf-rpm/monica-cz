@@ -51,12 +51,12 @@
 				["LAI", "MAX"],
 				["Precip", "SUM"],
 				["AbBiom", "LAST"],
-				["sand", [1, "LAST"]],
-				["clay", [1, "LAST"]],
-				["sand|sand_30", [1,3, "AVG"]],
-				["sand|sand_60", [4,6, "AVG"]],
-				["clay|clay_30", [1,3, "AVG"]],
-				["clay|clay_60", [4,6, "AVG"]],
+				["Sand|sand_1", [1, "LAST"]],
+				["Clay|clay_1", [1, "LAST"]],
+				["Sand|sand_30", [1,3, "AVG"]],
+				["Sand|sand_60", [4,6, "AVG"]],
+				["Clay|clay_30", [1,3, "AVG"]],
+				["Clay|clay_60", [4,6, "AVG"]],
 				["TempSum", "LAST"]
 			],
 			{"start": "Sowing", "end": "Harvest"}, [
