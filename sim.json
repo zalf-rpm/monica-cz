@@ -57,7 +57,8 @@
 				["Sand|sand_60", [4,6, "AVG"]],
 				["Clay|clay_30", [1,3, "AVG"]],
 				["Clay|clay_60", [4,6, "AVG"]],
-				["TempSum", "LAST"]
+				["TempSum", "LAST"],
+				["Fc", [1,20, "AVG"]]
 			],
 			{"start": "Sowing", "end": "Harvest"}, [
 				"Date",
