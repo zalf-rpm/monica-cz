@@ -97,7 +97,11 @@ def write_row_to_grids(row_col_data, row, ncols, header, path_to_output_dir, pat
         #"clay_30": {"data": make_dict_nparr(), "cast-to": "float", "digits": 1},
         #"clay_60": {"data": make_dict_nparr(), "cast-to": "float", "digits": 1}, #This takes the clay content of the layer 4 to 6, which would be 31-60 c, or the second 30 cm.#
         # "TempSum": {"data": make_dict_nparr(), "cast-to": "float", "digits": 1},  #This takes the last value of the cumulative temperature sum, which is equivalent to the total temperature sum.#
-        "Fc": {"data": make_dict_nparr(), "cast-to": "float", "digits": 4} 
+        #Fc": {"data": make_dict_nparr(), "cast-to": "float", "digits": 4},
+        "Tavg": {"data": make_dict_nparr(), "cast-to": "float", "digits": 2},
+        "Tmax": {"data": make_dict_nparr(), "cast-to": "float", "digits": 2},
+        "Tmin": {"data": make_dict_nparr(), "cast-to": "float", "digits": 2},
+        "Globrad": {"data": make_dict_nparr(), "cast-to": "float", "digits": 1} 
     }
     output_keys = list(output_grids.keys())
 
