@@ -404,8 +404,27 @@ def run_producer(server={"server": None, "port": None}, shared_id=None):
         with open(setup.get("site.json", config["site.json"])) as _:
             site_json = json.load(_)
 
-        if len(scenario) > 0 and scenario[:3].lower() == "rcp":
-            site_json["EnvironmentParameters"]["rcp"] = scenario
+        climate_scenario = scenario
+
+        # Map of SSP scenarios to corresponding RCP scenarios
+        ssp_to_rcp = {
+            "ssp119": "rcp19",
+            "ssp126": "rcp26",
+            "ssp245": "rcp45",
+            "ssp460": "rcp60",
+            "ssp370": "rcp70",
+            "ssp585": "rcp85"
+        }
+
+        rcp_scenario = climate_scenario.lower()
+
+        if rcp_scenario:
+            # Convert SSP to RCP if needed
+            if rcp_scenario in ssp_to_rcp:
+                rcp_scenario = ssp_to_rcp[rcp_scenario]
+
+            if rcp_scenario.startswith("rcp"):
+                site_json["EnvironmentParameters"]["rcp"] = rcp_scenario
 
         # read template crop.json
         with open(setup.get("crop.json", config["crop.json"])) as _:
@@ -675,57 +694,14 @@ def run_producer(server={"server": None, "port": None}, shared_id=None):
 
                 env["csvViaHeaderOptions"] = sim_json["climate.csv-options"]
 
-                # crow = int(crow)
-                # ccol = int(ccol)
-
-                # subpath_to_csv = TEMPLATE_PATH_CLIMATE_CSV.format(gcm=gcm, rcm=rcm, scenario=scenario, ensmem=ensmem,
-                #                                                   version=version, crow=str(int(crow)),
-                #                                                   ccol=str(int(ccol)))
-                # for _ in range(4):
-                #     subpath_to_csv = subpath_to_csv.replace("//", "/")
-                # env_template["pathToClimateCSV"] = [
-                #     paths["monica-path-to-climate-dir"] + setup["climate_path_to_csvs"] + subpath_to_csv]
-
-                # climate_csv_path = paths["monica-path-to-climate-dir"] + setup["climate_path_to_csvs"] + subpath_to_csv
-                # env_template["pathToClimateCSV"] = [climate_csv_path]
-                climate_csv_path = (paths["monica-path-to-climate-dir"] +
-                                    f"czechglobe/hist_csv_1961-01-01_to_2023-01-01/row-{crow}/col-{ccol}.csv.gz")
-
-                env["pathToClimateCSV"] = climate_csv_path
+                subpath_to_csv = TEMPLATE_PATH_CLIMATE_CSV.format(gcm=gcm, rcm=rcm, scenario=climate_scenario, ensmem=ensmem,
+                                                                  version=version, crow=str(int(crow)),
+                                                                  ccol=str(int(ccol)))
+                for _ in range(4):
+                    subpath_to_csv = subpath_to_csv.replace("//", "/")
+                env["pathToClimateCSV"] = [
+                    paths["monica-path-to-climate-dir"] + setup["climate_path_to_csvs"] + subpath_to_csv]
                 print("pathToClimateCSV:", env["pathToClimateCSV"])
-
-                # if setup["incl_hist"]:
-                #
-                #     if rcm[:3] == "UHO":
-                #         hist_subpath_to_csv = TEMPLATE_PATH_CLIMATE_CSV.format(gcm=gcm, rcm="CLMcom-CCLM4-8-17",
-                #                                                                scenario="historical", ensmem=ensmem,
-                #                                                                version=version, crow=str(crow),
-                #                                                                ccol=str(ccol))
-                #         for _ in range(4):
-                #             hist_subpath_to_csv = hist_subpath_to_csv.replace("//", "/")
-                #         env_template["pathToClimateCSV"].insert(0, paths["monica-path-to-climate-dir"] + setup[
-                #             "climate_path_to_csvs"] + "/" + hist_subpath_to_csv)
-                #
-                #     elif rcm[:3] == "SMH":
-                #         hist_subpath_to_csv = TEMPLATE_PATH_CLIMATE_CSV.format(gcm=gcm, rcm="CLMcom-CCLM4-8-17",
-                #                                                                scenario="historical", ensmem=ensmem,
-                #                                                                version=version, crow=str(crow),
-                #                                                                ccol=str(ccol))
-                #         for _ in range(4):
-                #             hist_subpath_to_csv = hist_subpath_to_csv.replace("//", "/")
-                #         env_template["pathToClimateCSV"].insert(0, paths["monica-path-to-climate-dir"] + setup[
-                #             "climate_path_to_csvs"] + "/" + hist_subpath_to_csv)
-                #
-                #     hist_subpath_to_csv = TEMPLATE_PATH_CLIMATE_CSV.format(gcm=gcm, rcm=rcm, scenario="historical",
-                #                                                            ensmem=ensmem, version=version,
-                #                                                            crow=str(crow), ccol=str(ccol))
-                #     for _ in range(4):
-                #         hist_subpath_to_csv = hist_subpath_to_csv.replace("//", "/")
-                #     env_template["pathToClimateCSV"].insert(0, paths["monica-path-to-climate-dir"] + setup[
-                #         "climate_path_to_csvs"] + "/" + hist_subpath_to_csv)
-                # print("pathToClimateCSV:", env_template["pathToClimateCSV"])
-                # if DEBUG_WRITE_CLIMATE:
-                #     listOfClimateFiles.add(subpath_to_csv)
 
                 env["customId"] = {
                     "setup_id": setup_id,
