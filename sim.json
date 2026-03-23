@@ -39,6 +39,16 @@
 
 		
 		"events": [
+			"daily", [
+				"Date",
+				"Crop",
+				"Yield",
+				"LAI",
+				"GPP",
+				"NPP",
+				"NEE",
+				"Act_ET"
+			],
 			"crop", [
 				["CM-count", "FIRST"],
 				["Year", "LAST"],
