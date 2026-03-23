@@ -41,6 +41,7 @@
 		"events": [
 			"daily", [
 				"Date",
+				"Year",
 				"Crop",
 				"Yield",
 				"LAI",
@@ -48,7 +49,9 @@
 				"NPP",
 				"NEE",
 				"Act_ET"
-			],
+			]
+		],
+		"__events": [
 			"crop", [
 				["CM-count", "FIRST"],
 				["Year", "LAST"],
@@ -67,10 +70,12 @@
 				["Tmax", "AVG"],
 				["Tmin", "AVG"],
 				["Globrad", "SUM"]
-				
-			],
+			]
+		],
+		"___events": [
 			{"start": "Sowing", "end": "Harvest"}, [
 				"Date",
+				"Year",
 				"Crop",
 				"Yield",
 				"LAI",
