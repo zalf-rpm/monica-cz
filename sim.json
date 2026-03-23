@@ -39,26 +39,6 @@
 
 		
 		"events": [
-			"crop", [
-				["CM-count", "FIRST"],
-				["Year", "LAST"],
-				["Crop", "FIRST"],
-				["Yield", "LAST"],
-				["GPP", "SUM"],
-				["NPP", "SUM"],
-				["NEE", "SUM"],
-				["Act_ET", "SUM"],
-				["LAI", "MAX"],
-				["Precip", "SUM"],
-				["AbBiom", "LAST"],
-				["TempSum", "LAST"],
-				["Fc", [1,20, "AVG"]],
-				["Tavg", "AVG"],
-				["Tmax", "AVG"],
-				["Tmin", "AVG"],
-				["Globrad", "SUM"]
-				
-			],
 			{"start": "Sowing", "end": "Harvest"}, [
 				"Date",
 				"Crop",
