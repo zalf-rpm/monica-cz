@@ -317,6 +317,7 @@ def run_producer(server={"server": None, "port": None}, shared_id=None):
     print("read: ", path_to_slope_grid)
 
     # # crop mask data
+    # crop_data=setup["crop_data"]
     # path_to_crop_grid = paths["path-to-data-dir"] + str(crop_data)
     # crop_epsg_code = int(path_to_crop_grid.split("/")[-1].split("_")[3])
     # crop_crs = CRS.from_epsg(crop_epsg_code)
