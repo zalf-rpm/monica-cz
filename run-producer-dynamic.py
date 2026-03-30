@@ -90,7 +90,7 @@ DATA_GRID_HEIGHT = "cz/cz_dem_500_32633_etrs89-utm33n.asc"
 DATA_GRID_SLOPE = "cz/cz_slope_500_32633_etrs89-utm33n.asc"
 # DATA_GRID_SOIL = "cz/cz_soil_500_32633_etrs89-utm33n.asc"
 DATA_GRID_SOIL = "cz/cz_soil_500_32633_etrs89-utm33n_woesten.asc"
-DATA_GRID_CROPS = "cz/cz-crop-wr_500_32633_etrs89-utm33n.asc"  # crop map for common wheat
+DATA_GRID_CROPS = "cz/cz-crop-sb_500_32633_etrs89-utm33n.asc"  # crop map for common wheat
 
 # TEMPLATE_PATH_LATLON = "data/cz_latlon-to-rowcol.json"
 TEMPLATE_PATH_LATLON = "{path_to_climate_dir}/cz_latlon-to-rowcol.json"
