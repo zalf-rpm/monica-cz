@@ -1,0 +1,475 @@
+#!/usr/bin/python
+# -*- coding: UTF-8
+
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+# Authors:
+# Michael Berg-Mohnicke <michael.berg@zalf.de>
+#
+# Maintainers:
+# Currently maintained by the authors.
+#
+# This file has been created at the Institute of
+# Landscape Systems Analysis at the ZALF.
+# Copyright (C: Leibniz Centre for Agricultural Landscape Research (ZALF)
+
+from collections import defaultdict, OrderedDict
+import csv
+import numpy as np
+import os
+from pyproj import CRS, Transformer
+import sys
+import zmq
+
+import monica_io3
+import monica_run_lib as Mrunlib
+
+PATHS = {
+    "re-local-remote": {
+        "path-to-data-dir": "data/",
+        "path-to-output-dir": "D:/projects/KlimErtrag/out_remote_local/",
+        "path-to-csv-output-dir": "D:/projects/KlimErtrag/out_remote_local/"
+    },
+    "mbm-local-remote": {
+        "path-to-data-dir": "data/",
+        "path-to-output-dir": "out/",
+        "path-to-csv-output-dir": "csv-out/"
+    },
+    "remoteConsumer-remoteMonica": {
+        "path-to-data-dir": "./data/",
+        "path-to-output-dir": "/out/out/",
+        "path-to-csv-output-dir": "/out/csv-out/"
+    }
+}
+# TEMPLATE_SOIL_PATH = "{local_path_to_data_dir}/cz/cz_soil_1000_32633_etrs89-utm33n.asc"
+TEMPLATE_SOIL_PATH = "{local_path_to_data_dir}/cz/cz_soil_500_32633_etrs89-utm33n_woesten.asc"
+
+def create_output(msg):
+    cm_count_to_vals = defaultdict(dict)
+    for data in msg.get("data", []):
+        results = data.get("results", [])
+
+        is_daily_section = data.get("origSpec", "") == '"daily"'
+
+        for vals in results:
+            if "CM-count" in vals:
+                cm_count_to_vals[vals["CM-count"]].update(vals)
+            elif is_daily_section and "Date" in vals:
+                cm_count_to_vals[vals["Date"]].update(vals)
+
+    if not cm_count_to_vals:
+        return cm_count_to_vals
+
+    cmcs = sorted(cm_count_to_vals.keys())
+    last_cmc = cmcs[-1]
+    if "Year" not in cm_count_to_vals[last_cmc]:
+        cm_count_to_vals.pop(last_cmc, None)
+
+    return cm_count_to_vals
+
+
+def write_row_to_grids(row_col_data, row, ncols, header, path_to_output_dir, path_to_csv_output_dir, setup_id):
+    """write grids row by row"""
+
+    if not hasattr(write_row_to_grids, "list_of_output_files"):
+        write_row_to_grids.list_of_output_files = defaultdict(list)
+
+    if not hasattr(write_row_to_grids, "cmc_to_crop"):
+        write_row_to_grids.cmc_to_crop = defaultdict(dict)
+
+    if not hasattr(write_row_to_grids, "file_rows_written"):
+        write_row_to_grids.file_rows_written = defaultdict(int)
+
+    cmc_to_crop = write_row_to_grids.cmc_to_crop[setup_id]
+
+    make_dict_nparr = lambda: defaultdict(lambda: np.full((ncols,), -9999, dtype=float))
+
+    output_grids = {
+        "Yield": {"data": make_dict_nparr(), "cast-to": "float", "digits": 1},
+        "LAI": {"data": make_dict_nparr(), "cast-to": "float", "digits": 1},
+        "GPP": {"data": make_dict_nparr(), "cast-to": "float", "digits": 1},
+        "NPP": {"data": make_dict_nparr(), "cast-to": "float", "digits": 1},
+        "NEE": {"data": make_dict_nparr(), "cast-to": "float", "digits": 1},
+        "Act_ET": {"data": make_dict_nparr(), "cast-to": "float", "digits": 1},
+        "AbBiom": {"data": make_dict_nparr(), "cast-to": "float", "digits": 1},
+        # "Precip": {"data": make_dict_nparr(), "cast-to": "float", "digits": 1},  #Precipitation was apparently already there :).#
+        #"sand_1": {"data": make_dict_nparr(), "cast-to": "float", "digits": 1},    #This would get the sand content of the first layer. As a metric I put "LAST" for now, but you coudl also use "FIRST" or any other since its static#
+        #"clay_1": {"data": make_dict_nparr(), "cast-to": "float", "digits": 1},
+        #"sand_30": {"data": make_dict_nparr(), "cast-to": "float", "digits": 1}, #This takes the average sand content of the first 30 cm.#
+        #"sand_60": {"data": make_dict_nparr(), "cast-to": "float", "digits": 1},
+        #"clay_30": {"data": make_dict_nparr(), "cast-to": "float", "digits": 1},
+        #"clay_60": {"data": make_dict_nparr(), "cast-to": "float", "digits": 1}, #This takes the clay content of the layer 4 to 6, which would be 31-60 c, or the second 30 cm.#
+        # "TempSum": {"data": make_dict_nparr(), "cast-to": "float", "digits": 1},  #This takes the last value of the cumulative temperature sum, which is equivalent to the total temperature sum.#
+        #Fc": {"data": make_dict_nparr(), "cast-to": "float", "digits": 4},
+        # "Tavg": {"data": make_dict_nparr(), "cast-to": "float", "digits": 2},
+        # "Tmax": {"data": make_dict_nparr(), "cast-to": "float", "digits": 2},
+        # "Tmin": {"data": make_dict_nparr(), "cast-to": "float", "digits": 2},
+        # "Globrad": {"data": make_dict_nparr(), "cast-to": "float", "digits": 1}
+    }
+    output_keys = list(output_grids.keys())
+
+    def ensure_file_ready(path_to_file: str, current_row: int):
+        if not os.path.isfile(path_to_file):
+            with open(path_to_file, "w") as f:
+                f.write(header)
+            write_row_to_grids.list_of_output_files[setup_id].append(path_to_file)
+            write_row_to_grids.file_rows_written[path_to_file] = 0
+
+        already = write_row_to_grids.file_rows_written[path_to_file]
+        missing = current_row - already
+        if missing > 0:
+            nodata_line = " ".join(["-9999"] * ncols) + "\n"
+            with open(path_to_file, "a") as f:
+                for _ in range(missing):
+                    f.write(nodata_line)
+            write_row_to_grids.file_rows_written[path_to_file] = current_row
+
+    # skip this part if we write just a nodata line
+    if row in row_col_data:
+        for col in range(0, ncols):
+            if col not in row_col_data[row]:
+                continue
+
+            rcd_val = row_col_data[row][col]
+
+            if rcd_val == -9999:
+                continue
+
+            cmc_and_year_to_vals = defaultdict(lambda: defaultdict(list))
+
+            for cell_data in rcd_val:
+                # if we got multiple datasets per cell, iterate over them and aggregate them in the following step
+                for cm_count, data in cell_data.items():
+                    if "Crop" in data:
+                        c = str(data["Crop"]).strip()
+                        if c:
+                            cmc_to_crop[cm_count] = c
+
+                    year = data.get("Year", None)
+                    if year is None:
+                        continue
+
+                    for key in output_keys:
+                        # only further process/store data we actually received
+                        if key in data:
+                            v = data[key]
+                            if isinstance(v, list):
+                                for i, v_ in enumerate(v):
+                                    cmc_and_year_to_vals[(cm_count, year)][f"{key}_{i + 1}"].append(v_)
+                            else:
+                                cmc_and_year_to_vals[(cm_count, year)][key].append(v)
+                        # if a key is missing, because that monica event was never raised/reached, create the empty list
+                        # so a no-data value is being produced
+                        else:
+                            cmc_and_year_to_vals[(cm_count, year)][key]
+
+            # potentially aggregate multiple data per cell and finally store them for this row
+            for (cm_count, year), key_to_vals in cmc_and_year_to_vals.items():
+                for key, vals in key_to_vals.items():
+                    if key not in output_grids:
+                        continue
+                    out = output_grids[key]["data"]
+                    out[(cm_count, year)][col] = (sum(vals) / len(vals)) if vals else -9999
+
+    # iterate over all prepared data for a single row and write row
+    for key, y2d_ in output_grids.items():
+        y2d = y2d_["data"]
+        digits = y2d_.get("digits", 0)
+
+        mold = (lambda x: str(round(float(x), digits)))
+
+        for (cm_count, year), row_arr in y2d.items():
+            crop = str(cmc_to_crop.get(cm_count, "none")).strip() or "none"
+            crop = crop.replace("/", "").replace(" ", "")
+            key2 = key.replace("/", "_")
+            path_to_file = f"{path_to_output_dir}{crop}_{key2}_{year}_{cm_count}.asc"
+
+            ensure_file_ready(path_to_file, row)
+
+            rowstr = " ".join(["-9999" if int(x) == -9999 else mold(x) for x in row_arr])
+            with open(path_to_file, "a") as f:
+                f.write(rowstr + "\n")
+
+            write_row_to_grids.file_rows_written[path_to_file] += 1
+
+    if row in row_col_data:
+        del row_col_data[row]
+
+
+def finalize_outputs(setup_id: int, total_rows: int, ncols: int):
+    if not hasattr(write_row_to_grids, "list_of_output_files"):
+        return
+    if not hasattr(write_row_to_grids, "file_rows_written"):
+        return
+
+    nodata_line = " ".join(["-9999"] * ncols) + "\n"
+
+    for path_to_file in write_row_to_grids.list_of_output_files.get(setup_id, []):
+        already = write_row_to_grids.file_rows_written.get(path_to_file, 0)
+        missing = total_rows - already
+        if missing > 0:
+            with open(path_to_file, "a") as f:
+                for _ in range(missing):
+                    f.write(nodata_line)
+            write_row_to_grids.file_rows_written[path_to_file] = total_rows
+
+
+def run_consumer(leave_after_finished_run=True, server={"server": None, "port": None}, shared_id=None):
+    """collect data from workers"""
+
+    config = {
+        "mode": "re-local-remote",  # "mbm-local-remote",
+        "port": server["port"] if server["port"] else "7778",
+        "server": server["server"] if server["server"] else "login01.cluster.zalf.de",
+        "start-row": "0",
+        "end-row": "-1",
+        "shared_id": shared_id,
+        "timeout": 600000  # 10 minutes
+    }
+
+    if len(sys.argv) > 1 and __name__ == "__main__":
+        for arg in sys.argv[1:]:
+            k, v = arg.split("=")
+            if k in config:
+                config[k] = v
+
+    paths = PATHS[config["mode"]]
+
+    if not "out" in config:
+        config["out"] = paths["path-to-output-dir"]
+    if not "csv-out" in config:
+        config["csv-out"] = paths["path-to-csv-output-dir"]
+
+    print("consumer config:", config)
+
+    context = zmq.Context()
+    if config["shared_id"]:
+        socket = context.socket(zmq.DEALER)
+        socket.setsockopt(zmq.IDENTITY, config["shared_id"])
+    else:
+        socket = context.socket(zmq.PULL)
+
+    socket.connect("tcp://" + config["server"] + ":" + config["port"])
+    socket.RCVTIMEO = config["timeout"]
+    leave = False
+    write_normal_output_files = False
+
+    path_to_soil_grid = TEMPLATE_SOIL_PATH.format(local_path_to_data_dir=paths["path-to-data-dir"])
+    soil_epsg_code = int(path_to_soil_grid.split("/")[-1].split("_")[2])
+    soil_crs = CRS.from_epsg(soil_epsg_code)
+    soil_metadata, header = Mrunlib.read_header(path_to_soil_grid)
+    soil_grid_template = np.loadtxt(path_to_soil_grid, dtype=int, skiprows=6)
+
+    scols = int(soil_metadata["ncols"])
+    srows = int(soil_metadata["nrows"])
+    scellsize = int(soil_metadata["cellsize"])
+    xllcorner = int(soil_metadata["xllcorner"])
+    yllcorner = int(soil_metadata["yllcorner"])
+    nodata_value = int(soil_metadata["nodata_value"])
+
+    # set all data values to one, to count them later
+    soil_grid_template[soil_grid_template != nodata_value] = 1
+    # set all no-data values to 0, to ignore them while counting
+    soil_grid_template[soil_grid_template == nodata_value] = 0
+
+    # count cols in rows
+    datacells_per_row = np.sum(soil_grid_template, axis=1)
+
+    start_row = int(config["start-row"])
+    end_row = int(config["end-row"])
+    ncols = int(soil_metadata["ncols"])
+    setup_id_to_data = defaultdict(lambda: {
+        "start_row": start_row,
+        "end_row": end_row,
+        "nrows": end_row - start_row + 1 if start_row > 0 and end_row >= start_row else int(soil_metadata["nrows"]),
+        "ncols": ncols,
+        "header": header,
+        "out_dir_exists": False,
+        "row-col-data": defaultdict(lambda: defaultdict(list)),
+        "datacell-count": datacells_per_row.copy(),
+        "next-row": start_row
+    })
+
+    def process_message(msg):
+        if len(msg["errors"]) > 0:
+            cid = msg.get("customId", {})
+            print("There were errors for", cid, "errors:", msg["errors"])
+
+            setup_id = cid.get("setup_id")
+            row = cid.get("srow")
+            col = cid.get("scol")
+            if setup_id is not None and row is not None and col is not None:
+                data = setup_id_to_data[setup_id]
+                data["row-col-data"][row][col] = -9999
+                data["datacell-count"][row] -= 1
+            return False
+
+        if not hasattr(process_message, "wnof_count"):
+            process_message.wnof_count = 0
+            process_message.setup_count = 0
+
+        leave = False
+
+        if not write_normal_output_files:
+            custom_id = msg["customId"]
+            setup_id = custom_id["setup_id"]
+            is_nodata = custom_id["nodata"]
+
+            data = setup_id_to_data[setup_id]
+
+            row = custom_id["srow"]
+            col = custom_id["scol"]
+            # crow = custom_id.get("crow", -1)
+            # ccol = custom_id.get("ccol", -1)
+            # soil_id = custom_id.get("soil_id", -1)
+
+            debug_msg = "received work result " + str(process_message.received_env_count) + " customId: " + str(
+                msg.get("customId", "")) \
+                        + " next row: " + str(data["next-row"]) \
+                        + " cols@row to go: " + str(data["datacell-count"][row]) + "@" + str(
+                row) + " cells_per_row: " + str(datacells_per_row[row])  # \
+            # + " rows unwritten: " + str(data["row-col-data"].keys())
+            # print(debug_msg)
+            # debug_file.write(debug_msg + "\n")
+            if is_nodata:
+                data["row-col-data"][row][col] = -9999
+            else:
+                data["row-col-data"][row][col].append(create_output(msg))
+            data["datacell-count"][row] -= 1
+
+            process_message.received_env_count = process_message.received_env_count + 1
+
+            while (data["next-row"] in data["row-col-data"] and data["datacell-count"][data["next-row"]] == 0) \
+                    or (
+                    len(data["datacell-count"]) > data["next-row"] and data["datacell-count"][data["next-row"]] == 0):
+
+                path_to_out_dir = config["out"] + str(setup_id) + "/"
+                path_to_csv_out_dir = config["csv-out"] + str(setup_id) + "/"
+                print(path_to_out_dir)
+                if not data["out_dir_exists"]:
+                    if os.path.isdir(path_to_out_dir) and os.path.exists(path_to_out_dir):
+                        data["out_dir_exists"] = True
+                    else:
+                        try:
+                            os.makedirs(path_to_out_dir)
+                            data["out_dir_exists"] = True
+                        except OSError:
+                            print("c: Couldn't create dir:", path_to_out_dir, "! Exiting.")
+                            exit(1)
+                    if os.path.isdir(path_to_csv_out_dir) and os.path.exists(path_to_csv_out_dir):
+                        data["out_dir_exists"] = True
+                    else:
+                        try:
+                            os.makedirs(path_to_csv_out_dir)
+                            data["out_dir_exists"] = True
+                        except OSError:
+                            print("c: Couldn't create dir:", path_to_csv_out_dir, "! Exiting.")
+                            exit(1)
+
+                write_row_to_grids(data["row-col-data"], data["next-row"], data["ncols"], data["header"],
+                                   path_to_out_dir, path_to_csv_out_dir, setup_id)
+
+                debug_msg = "wrote row: " + str(data["next-row"]) + " next-row: " + str(
+                    data["next-row"] + 1) + " rows unwritten: " + str(list(data["row-col-data"].keys()))
+                print(debug_msg)
+                # debug_file.write(debug_msg + "\n")
+
+                data["next-row"] += 1  # move to next row (to be written)
+
+                if leave_after_finished_run \
+                        and ((data["end_row"] < 0 and data["next-row"] > data["nrows"] - 1)
+                             or (0 <= data["end_row"] < data["next-row"])):
+                    process_message.setup_count += 1
+
+        elif write_normal_output_files:
+            if msg.get("type", "") in ["jobs-per-cell", "no-data", "setup_data"]:
+                # print "ignoring", result.get("type", "")
+                return
+
+            print("received work result ", process_message.received_env_count, " customId: ",
+                  str(msg.get("customId", "")))
+
+            custom_id = msg["customId"]
+            is_nodata = custom_id["nodata"]
+            if is_nodata:
+                return leave
+            setup_id = custom_id["setup_id"]
+            row = custom_id["srow"]
+            col = custom_id["scol"]
+            # crow = custom_id.get("crow", -1)
+            # ccol = custom_id.get("ccol", -1)
+            # soil_id = custom_id.get("soil_id", -1)
+
+            process_message.wnof_count += 1
+
+            path_to_out_dir = config["csv-out"] + str(setup_id) + "/" + str(row) + "/"
+            print(path_to_out_dir)
+            if not os.path.exists(path_to_out_dir):
+                try:
+                    os.makedirs(path_to_out_dir)
+                except OSError:
+                    print("c: Couldn't create dir:", path_to_out_dir, "! Exiting.")
+                    exit(1)
+
+            # with open("out/out-" + str(i) + ".csv", 'wb') as _:
+            with open(path_to_out_dir + "col-" + str(col) + ".csv", "w", newline='') as _:
+
+                writer = csv.writer(_, delimiter=",")
+                for data_ in msg.get("data", []):
+                    results = data_.get("results", [])
+                    orig_spec = data_.get("origSpec", "")
+                    output_ids = data_.get("outputIds", [])
+
+                    if len(results) > 0:
+                        writer.writerow([orig_spec.replace("\"", "")])
+                        for row in monica_io3.write_output_header_rows(output_ids,
+                                                                       include_header_row=True,
+                                                                       include_units_row=True,
+                                                                       include_time_agg=False):
+                            writer.writerow(row)
+
+                        # for row in monica_io3.write_output(output_ids, results):
+                        #     writer.writerow(row)
+
+                        for result in results:
+                            row = []
+                            for output_id in output_ids:
+                                field_name = output_id["name"]
+                                row.append(result.get(field_name, ""))
+                            writer.writerow(row)
+
+                writer.writerow([])
+
+            process_message.received_env_count = process_message.received_env_count + 1
+
+        return leave
+
+    process_message.received_env_count = 1
+
+    while not leave:
+        try:
+            # start_time_recv = timeit.default_timer()
+            msg = socket.recv_json()  # encoding="latin-1"
+            # elapsed = timeit.default_timer() - start_time_recv
+            # print("time to receive message" + str(elapsed))
+            # start_time_proc = timeit.default_timer()
+            leave = process_message(msg)
+            # elapsed = timeit.default_timer() - start_time_proc
+            # print("time to process message" + str(elapsed))
+        except zmq.error.Again as _e:
+            print('no response from the server (with "timeout"=%d ms) ' % socket.RCVTIMEO)
+            for setup_id, data in setup_id_to_data.items():
+                finalize_outputs(setup_id, data["nrows"], data["ncols"])
+            return
+        except Exception as e:
+            print("Exception:", e)
+            # continue
+
+    print("exiting run_consumer()")
+    # debug_file.close()
+
+
+if __name__ == "__main__":
+    run_consumer()
