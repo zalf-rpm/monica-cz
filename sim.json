@@ -48,7 +48,8 @@
 				"GPP",
 				"NPP",
 				"NEE",
-				"Act_ET"
+				"Act_ET",
+				"AbBiom"
 			]
 		],
 		"__events": [
