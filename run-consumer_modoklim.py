@@ -94,6 +94,7 @@ def write_row_to_grids(row_col_data, row, ncols, header, path_to_output_dir, pat
         "NEE": {"data": make_dict_nparr(), "cast-to": "float", "digits": 1},
         "Act_ET": {"data": make_dict_nparr(), "cast-to": "float", "digits": 1},
         "AbBiom": {"data": make_dict_nparr(), "cast-to": "float", "digits": 1},
+        "Reco": {"data": make_dict_nparr(), "cast-to": "float", "digits": 1},
         # "Precip": {"data": make_dict_nparr(), "cast-to": "float", "digits": 1},  #Precipitation was apparently already there :).#
         #"sand_1": {"data": make_dict_nparr(), "cast-to": "float", "digits": 1},    #This would get the sand content of the first layer. As a metric I put "LAST" for now, but you coudl also use "FIRST" or any other since its static#
         #"clay_1": {"data": make_dict_nparr(), "cast-to": "float", "digits": 1},
