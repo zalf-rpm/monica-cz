@@ -1,0 +1,115 @@
+{
+	"__note__": "09/2023 : Version for simulations of historic and current plant growth. There is a different version for historic plant growth because of different headers.",
+	"crop.json": "crop.json",
+	"site.json": "site.json",
+	"climate.csv": "",
+
+	"climate.csv-options": {
+		"_start-date": "2018-01-01",
+        "_end-date": "2026-06-28",
+        "no-of-climate-file-header-lines": 2,
+        "csv-separator": ",",
+        "header-to-acd-names": {
+			"iso-date": "iso-date",
+			"tmin": "tmin",
+			"tavg": "tavg",
+			"tmax": "tmax",
+            "precip": "precip",
+            "relhumid": "relhumid",
+			"globrad": "globrad",
+			"wind": "wind"
+        }
+    },
+	
+	"debug?": false,
+	"path-to-output": "./",
+	"include-file-base-path": "data/params/",
+	
+	"output": { 
+	  "write-file?": false,
+		"file-name": "out.csv",
+	
+		"csv-options": {
+			"include-header-row": true,
+			"include-units-row": false,
+			"csv-separator": ","
+		},
+
+		"obj-outputs?": true,
+
+		
+		"events": [
+			"daily", [
+				"Date",
+				"Year",
+				"Crop",
+				"Yield",
+				"LAI",
+				"GPP",
+				"NPP",
+				"NEE",
+				"Act_ET",
+				"AbBiom"
+			]
+		],
+		"__events": [
+			"crop", [
+				["CM-count", "FIRST"],
+				["Year", "LAST"],
+				["Crop", "FIRST"],
+				["Yield", "LAST"],
+				["GPP", "SUM"],
+				["NPP", "SUM"],
+				["NEE", "SUM"],
+				["Act_ET", "SUM"],
+				["LAI", "MAX"],
+				["Precip", "SUM"],
+				["AbBiom", "LAST"],
+				["TempSum", "LAST"],
+				["Fc", [1,20, "AVG"]],
+				["Tavg", "AVG"],
+				["Tmax", "AVG"],
+				["Tmin", "AVG"],
+				["Globrad", "SUM"]
+			]
+		],
+		"___events": [
+			{"start": "Sowing", "end": "Harvest"}, [
+				"Date",
+				"Year",
+				"Crop",
+				"Yield",
+				"LAI",
+				"GPP",
+				"NPP",
+				"NEE",
+				"Act_ET",
+				["Mois", [1, 6]]
+			]
+		]
+	},
+
+	"NumberOfLayers": 20,
+	"LayerThickness": [0.1, "m"],
+
+	"UseSecondaryYields": false,
+	"NitrogenResponseOn": true,
+	"WaterDeficitResponseOn": true,
+	"EmergenceMoistureControlOn": false,
+	"EmergenceFloodingControlOn": false,
+
+	"UseAutomaticIrrigation": false,
+	"AutoIrrigationParams": {
+		"irrigationParameters": {
+			"nitrateConcentration": [0, "mg dm-3"],
+			"sulfateConcentration": [0, "mg dm-3"]
+		},
+		"amount": [0, "mm"],
+		"threshold": 0.9
+	},
+
+	"UseNMinMineralFertilisingMethod": true,
+	"NMinUserParams": { "min": 40, "max": 120, "delayInDays": 10 },
+	"NMinFertiliserPartition": ["include-from-file", "mineral-fertilisers/AN.json"],
+	"JulianDayAutomaticFertilising": 89
+}
